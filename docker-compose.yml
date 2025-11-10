@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Resource Service DB
+  resource-db:
+    image: mariadb:11.4
+    container_name: resource-mariadb
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: 1234
+      MARIADB_DATABASE: unibooker_resource
+    volumes:
+      - resource-db-data:/var/lib/mysql
+    networks:
+      - unibooker-network
+
+  # Main Service DB
+  main-db:
+    image: mariadb:11.4
+    container_name: main-mariadb
+    restart: always
+    ports:
+      - "3307:3306"  # 외부 3307 → 내부 3306
+    environment:
+      MARIADB_ROOT_PASSWORD: 1234
+      MARIADB_DATABASE: unibooker_main
+    volumes:
+      - main-db-data:/var/lib/mysql
+    networks:
+      - unibooker-network
+
+volumes:
+  resource-db-data:
+  main-db-data:
+
+networks:
+  unibooker-network:
+    driver: bridge

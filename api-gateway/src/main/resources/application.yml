@@ -1,0 +1,73 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # Main Service (Eureka 사용)
+            - id: main-service
+              uri: lb://main-service
+              predicates:
+                - Path=/api/auth/**, /api/users/**, /api/companies/**
+              filters:
+                - JwtAuthenticationFilter
+
+            # Resource Service (Eureka 사용)
+            - id: resource-service
+              uri: lb://resource-service
+              predicates:
+                - Path=/api/resources/**, /api/resource-groups/**, /api/resource-time-slots/**
+              filters:
+                - JwtAuthenticationFilter
+
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: "*"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders: "*"
+                allowCredentials: false
+
+# Eureka Client 설정
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+# JWT 설정
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity: 3600000
+  refresh-token-validity: 604800000
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# Logging
+logging:
+  level:
+    com.unibooker.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
