@@ -10,19 +10,41 @@ spring:
       server:
         webflux:
           routes:
-            # Main Service (Eureka 사용)
-            - id: main-service
+            # 인증 API (인증 불필요)
+            - id: main-service-auth
               uri: lb://main-service
               predicates:
-                - Path=/api/auth/**, /api/users/**, /api/companies/**
+                - Path=/api/auth/**
+
+            # 알림 API (인증 필요)
+            - id: main-service-notifications
+              uri: lb://main-service
+              predicates:
+                - Path=/api/notifications/**
               filters:
                 - JwtAuthenticationFilter
 
-            # Resource Service (Eureka 사용)
+            # 사용자 API (인증 필요)
+            - id: main-service-users
+              uri: lb://main-service
+              predicates:
+                - Path=/api/users/**
+              filters:
+                - JwtAuthenticationFilter
+
+            # 기업 API (인증 필요)
+            - id: main-service-companies
+              uri: lb://main-service
+              predicates:
+                - Path=/api/companies/**
+              filters:
+                - JwtAuthenticationFilter
+
+            # Resource Service
             - id: resource-service
               uri: lb://resource-service
               predicates:
-                - Path=/api/resources/**, /api/resource-groups/**, /api/resource-time-slots/**
+                - Path=/api/resources/**,/api/resource-groups/**,/api/resource-time-slots/**
               filters:
                 - JwtAuthenticationFilter
 
