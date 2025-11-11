@@ -1,7 +1,7 @@
-package com.unibooker.main.controller;
+package com.unibooker.main.domain.user.controller;
 
-import com.unibooker.main.dto.UserDto;
-import com.unibooker.main.service.UserService;
+import com.unibooker.main.domain.user.model.dto.UserDto;
+import com.unibooker.main.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

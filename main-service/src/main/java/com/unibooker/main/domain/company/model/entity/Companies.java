@@ -1,6 +1,7 @@
-package com.unibooker.main.entity;
+package com.unibooker.main.domain.company.model.entity;
 
 import com.unibooker.common.entity.BaseEntity;
+import com.unibooker.main.domain.company.model.CompanyStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

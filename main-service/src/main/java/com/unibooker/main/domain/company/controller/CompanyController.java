@@ -1,8 +1,8 @@
-package com.unibooker.main.controller;
+package com.unibooker.main.domain.company.controller;
 
-import com.unibooker.main.dto.CompanyDto;
-import com.unibooker.main.entity.CompanyStatus;
-import com.unibooker.main.service.CompanyService;
+import com.unibooker.main.domain.company.model.dto.CompanyDto;
+import com.unibooker.main.domain.company.model.CompanyStatus;
+import com.unibooker.main.domain.company.service.CompanyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

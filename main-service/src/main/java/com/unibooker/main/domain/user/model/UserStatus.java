@@ -1,4 +1,4 @@
-package com.unibooker.main.entity;
+package com.unibooker.main.domain.user.model;
 
 /**
  * 사용자 상태

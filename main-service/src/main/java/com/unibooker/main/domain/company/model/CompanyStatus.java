@@ -1,4 +1,4 @@
-package com.unibooker.main.entity;
+package com.unibooker.main.domain.company.model;
 
 /**
  * 기업 상태

@@ -1,9 +1,9 @@
-package com.unibooker.main.service;
+package com.unibooker.main.domain.company.service;
 
-import com.unibooker.main.dto.CompanyDto;
-import com.unibooker.main.entity.Companies;
-import com.unibooker.main.entity.CompanyStatus;
-import com.unibooker.main.repository.CompanyRepository;
+import com.unibooker.main.domain.company.model.dto.CompanyDto;
+import com.unibooker.main.domain.company.model.entity.Companies;
+import com.unibooker.main.domain.company.model.CompanyStatus;
+import com.unibooker.main.domain.company.repository.CompanyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

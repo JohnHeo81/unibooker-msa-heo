@@ -1,7 +1,7 @@
-package com.unibooker.main.repository;
+package com.unibooker.main.domain.user.repository;
 
-import com.unibooker.main.entity.UserRole;
-import com.unibooker.main.entity.Users;
+import com.unibooker.main.domain.user.model.UserRole;
+import com.unibooker.main.domain.user.model.entity.Users;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

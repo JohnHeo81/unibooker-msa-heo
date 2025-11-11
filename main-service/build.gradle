@@ -38,10 +38,19 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    // Spring Mail (이메일 발송용) - 추가
+    // Spring Mail (이메일 발송용)
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
-    // Eureka Client 추가
+    // Thymeleaf (이메일 템플릿)
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
+    // WebSocket (STOMP)
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+    // Kafka
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // Eureka Client
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 
 

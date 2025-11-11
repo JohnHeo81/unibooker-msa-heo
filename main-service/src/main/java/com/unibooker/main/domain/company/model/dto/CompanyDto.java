@@ -1,6 +1,6 @@
-package com.unibooker.main.dto;
+package com.unibooker.main.domain.company.model.dto;
 
-import com.unibooker.main.entity.CompanyStatus;
+import com.unibooker.main.domain.company.model.CompanyStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

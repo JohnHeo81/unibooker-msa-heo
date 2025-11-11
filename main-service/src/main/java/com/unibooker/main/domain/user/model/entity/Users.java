@@ -1,6 +1,9 @@
-package com.unibooker.main.entity;
+package com.unibooker.main.domain.user.model.entity;
 
 import com.unibooker.common.entity.BaseEntity;
+import com.unibooker.main.domain.user.model.Gender;
+import com.unibooker.main.domain.user.model.UserRole;
+import com.unibooker.main.domain.user.model.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 

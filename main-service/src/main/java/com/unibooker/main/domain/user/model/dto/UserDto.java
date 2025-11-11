@@ -1,8 +1,8 @@
-package com.unibooker.main.dto;
+package com.unibooker.main.domain.user.model.dto;
 
-import com.unibooker.main.entity.Gender;
-import com.unibooker.main.entity.UserRole;
-import com.unibooker.main.entity.UserStatus;
+import com.unibooker.main.domain.user.model.Gender;
+import com.unibooker.main.domain.user.model.UserRole;
+import com.unibooker.main.domain.user.model.UserStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

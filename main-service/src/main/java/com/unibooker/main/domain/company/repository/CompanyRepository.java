@@ -1,7 +1,7 @@
-package com.unibooker.main.repository;
+package com.unibooker.main.domain.company.repository;
 
-import com.unibooker.main.entity.Companies;
-import com.unibooker.main.entity.CompanyStatus;
+import com.unibooker.main.domain.company.model.entity.Companies;
+import com.unibooker.main.domain.company.model.CompanyStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

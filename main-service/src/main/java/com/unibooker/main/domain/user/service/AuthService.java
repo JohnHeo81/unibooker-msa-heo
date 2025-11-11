@@ -1,10 +1,14 @@
-package com.unibooker.main.service;
+package com.unibooker.main.domain.user.service;
 
 import com.unibooker.common.util.JwtUtil;
-import com.unibooker.main.dto.AuthDto;
-import com.unibooker.main.entity.*;
-import com.unibooker.main.repository.CompanyRepository;
-import com.unibooker.main.repository.UserRepository;
+import com.unibooker.main.domain.company.model.CompanyStatus;
+import com.unibooker.main.domain.company.model.entity.Companies;
+import com.unibooker.main.domain.user.model.Gender;
+import com.unibooker.main.domain.user.model.UserRole;
+import com.unibooker.main.domain.user.model.dto.AuthDto;
+import com.unibooker.main.domain.user.model.entity.Users;
+import com.unibooker.main.domain.company.repository.CompanyRepository;
+import com.unibooker.main.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
