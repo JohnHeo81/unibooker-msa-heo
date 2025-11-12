@@ -7,59 +7,27 @@ spring:
 
   cloud:
     gateway:
+      # 글로벌 CORS 설정
       server:
         webflux:
-          routes:
-            # 인증 API (인증 불필요)
-            - id: main-service-auth
-              uri: lb://main-service
-              predicates:
-                - Path=/api/auth/**
-
-            # 알림 API (인증 필요)
-            - id: main-service-notifications
-              uri: lb://main-service
-              predicates:
-                - Path=/api/notifications/**
-              filters:
-                - JwtAuthenticationFilter
-
-            # 사용자 API (인증 필요)
-            - id: main-service-users
-              uri: lb://main-service
-              predicates:
-                - Path=/api/users/**
-              filters:
-                - JwtAuthenticationFilter
-
-            # 기업 API (인증 필요)
-            - id: main-service-companies
-              uri: lb://main-service
-              predicates:
-                - Path=/api/companies/**
-              filters:
-                - JwtAuthenticationFilter
-
-            # Resource Service
-            - id: resource-service
-              uri: lb://resource-service
-              predicates:
-                - Path=/api/resources/**,/api/resource-groups/**,/api/resource-time-slots/**
-              filters:
-                - JwtAuthenticationFilter
-
           globalcors:
             cors-configurations:
               '[/**]':
-                allowedOrigins: "*"
+                allowedOriginPatterns: "*"
                 allowedMethods:
                   - GET
                   - POST
                   - PUT
                   - DELETE
+                  - PATCH
                   - OPTIONS
                 allowedHeaders: "*"
-                allowCredentials: false
+                allowCredentials: true
+                maxAge: 3600
+
+      # 기본 필터 설정
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
 
 # Eureka Client 설정
 eureka:
@@ -75,21 +43,24 @@ eureka:
 # JWT 설정
 jwt:
   secret: ${JWT_SECRET}
-  access-token-validity: 3600000
-  refresh-token-validity: 604800000
+  access-token-validity: 3600000      # 1시간 (밀리초)
+  refresh-token-validity: 604800000   # 7일 (밀리초)
 
-# Actuator
+# Actuator 설정
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,gateway
   endpoint:
     health:
       show-details: always
 
-# Logging
+# Logging 설정
 logging:
   level:
     com.unibooker.gateway: DEBUG
     org.springframework.cloud.gateway: DEBUG
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

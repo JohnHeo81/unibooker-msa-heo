@@ -1,8 +1,11 @@
 package com.unibooker.gateway.filter;
 
+import com.unibooker.common.util.CookieUtil;
+import com.unibooker.common.enums.UserRole;
+import org.springframework.http.HttpCookie;
+import org.springframework.util.MultiValueMap;
 import com.unibooker.common.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpStatus;
@@ -11,10 +14,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * JWT 인증 필터
- * - 모든 요청에서 JWT 토큰 검증
- * - 검증 성공 시 사용자 정보를 헤더에 추가
+ * - Authorization 헤더에서 JWT 토큰 검증
+ * - 검증 성공 시 사용자 정보를 헤더에 추가 (X-User-Id, X-User-Email, X-User-Role, X-Company-Id)
  * - 검증 실패 시 401 Unauthorized 반환
  */
 @Slf4j
@@ -23,19 +29,26 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 
     private final JwtUtil jwtUtil;
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    /**
+     * 인증 제외 경로 목록
+     * - 로그인, 회원가입, 공개 API
+     */
+    private static final List<String> EXCLUDED_PATHS = Arrays.asList(
+            "/api/admin/signup",
+            "/api/admin/login",
+            "/api/users/signup",
+            "/api/users/login",
+            "/api/users/check-email",
+            "/api/users/accounts",
+            "/api/users/reset-password",
+            "/api/users/find-email",
+            "/api/super/login",
+            "/actuator"
+    );
 
-    @Value("${jwt.access-token-validity}")
-    private long accessTokenValidity;
-
-    @Value("${jwt.refresh-token-validity}")
-    private long refreshTokenValidity;
-
-    public JwtAuthenticationFilter() {
+    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
         super(Config.class);
-        // JwtUtil은 나중에 초기화
-        this.jwtUtil = null;
+        this.jwtUtil = jwtUtil;
     }
 
     @Override
@@ -44,7 +57,9 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
             ServerHttpRequest request = exchange.getRequest();
             String path = request.getURI().getPath();
 
-            // JWT 검증 제외 경로 (로그인, 회원가입)
+            log.debug("JWT 필터 처리 - 경로: {}", path);
+
+            // 인증 제외 경로 확인
             if (isExcludedPath(path)) {
                 log.info("JWT 검증 제외 경로: {}", path);
                 return chain.filter(exchange);
@@ -55,15 +70,10 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 
             if (token == null) {
                 log.warn("JWT 토큰이 없습니다. 경로: {}", path);
-                return onError(exchange, "JWT 토큰이 없습니다.", HttpStatus.UNAUTHORIZED);
+                return onError(exchange, "JWT 토큰이 필요합니다.", HttpStatus.UNAUTHORIZED);
             }
 
             try {
-                // JwtUtil 초기화 (최초 1회)
-                if (jwtUtil == null) {
-                    initJwtUtil();
-                }
-
                 // 토큰 검증
                 if (!jwtUtil.validateToken(token)) {
                     log.warn("JWT 토큰이 유효하지 않습니다. 경로: {}", path);
@@ -76,7 +86,10 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
                 String role = jwtUtil.getRole(token);
                 Long companyId = jwtUtil.getCompanyId(token);
 
-                // 헤더에 사용자 정보 추가 (서비스에서 사용)
+                log.info("JWT 검증 성공 - userId: {}, email: {}, role: {}, companyId: {}",
+                        userId, email, role, companyId);
+
+                // 헤더에 사용자 정보 추가 (다운스트림 서비스에서 사용)
                 ServerHttpRequest modifiedRequest = request.mutate()
                         .header("X-User-Id", String.valueOf(userId))
                         .header("X-User-Email", email)
@@ -88,11 +101,10 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
                         .request(modifiedRequest)
                         .build();
 
-                log.info("JWT 검증 성공. userId: {}, email: {}, role: {}", userId, email, role);
                 return chain.filter(modifiedExchange);
 
             } catch (Exception e) {
-                log.error("JWT 검증 중 오류 발생: {}", e.getMessage());
+                log.error("JWT 검증 중 오류 발생: {}", e.getMessage(), e);
                 return onError(exchange, "토큰 검증 실패", HttpStatus.UNAUTHORIZED);
             }
         };
@@ -102,40 +114,80 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
      * JWT 검증 제외 경로 확인
      */
     private boolean isExcludedPath(String path) {
-        return path.startsWith("/api/auth/") ||
-                path.startsWith("/actuator/");
+        return EXCLUDED_PATHS.stream().anyMatch(path::startsWith);
     }
 
     /**
-     * Authorization 헤더에서 Bearer 토큰 추출
+     * JWT 토큰 추출 (우선순위: Authorization 헤더 → Cookie)
      */
     private String extractToken(ServerHttpRequest request) {
+        // 1. Authorization 헤더에서 토큰 추출 시도
         String bearerToken = request.getHeaders().getFirst("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            log.debug("Authorization 헤더에서 토큰 추출");
             return bearerToken.substring(7);
         }
+
+        // 2. Cookie에서 토큰 추출 시도
+        String tokenFromCookie = extractTokenFromCookie(request);
+        if (tokenFromCookie != null) {
+            log.debug("Cookie에서 토큰 추출");
+            return tokenFromCookie;
+        }
+
         return null;
     }
 
     /**
-     * JwtUtil 초기화
+     * 쿠키에서 JWT 토큰 추출
+     * - 경로 기반 권한 추론하여 해당 쿠키 탐색
+     * - 못 찾으면 모든 권한 쿠키 순차 확인
      */
-    private void initJwtUtil() {
-        if (this.jwtUtil == null) {
-            synchronized (this) {
-                if (this.jwtUtil == null) {
-                    JwtUtil newJwtUtil = new JwtUtil(jwtSecret, accessTokenValidity, refreshTokenValidity);
-                    // reflection으로 final 필드 수정 (임시 방편)
-                    try {
-                        java.lang.reflect.Field field = JwtAuthenticationFilter.class.getDeclaredField("jwtUtil");
-                        field.setAccessible(true);
-                        field.set(this, newJwtUtil);
-                    } catch (Exception e) {
-                        log.error("JwtUtil 초기화 실패", e);
-                    }
-                }
+    private String extractTokenFromCookie(ServerHttpRequest request) {
+        MultiValueMap<String, HttpCookie> cookies = request.getCookies();
+        if (cookies == null || cookies.isEmpty()) {
+            return null;
+        }
+
+        String path = request.getURI().getPath();
+        UserRole inferredRole = inferRoleFromPath(path);
+
+        // 특정 권한 경로인 경우 해당 쿠키만 확인
+        if (inferredRole != null) {
+            String cookieName = CookieUtil.getAccessTokenCookieName(inferredRole);
+            HttpCookie cookie = cookies.getFirst(cookieName);
+            if (cookie != null) {
+                log.debug("경로 기반 토큰 추출 - role: {}, cookieName: {}", inferredRole, cookieName);
+                return cookie.getValue();
+            }
+            return null;
+        }
+
+        // API 경로 등: 모든 권한 쿠키 순차 확인
+        for (UserRole role : UserRole.values()) {
+            String cookieName = CookieUtil.getAccessTokenCookieName(role);
+            HttpCookie cookie = cookies.getFirst(cookieName);
+            if (cookie != null) {
+                log.debug("API 경로 토큰 추출 - role: {}, cookieName: {}", role, cookieName);
+                return cookie.getValue();
             }
         }
+
+        return null;
+    }
+
+    /**
+     * 요청 경로를 기반으로 권한 추론
+     */
+    private UserRole inferRoleFromPath(String path) {
+        if (path.startsWith("/api/users")) {
+            return UserRole.USER;
+        } else if (path.startsWith("/api/admins") || path.startsWith("/api/managers")) {
+            return UserRole.ADMIN;  // ADMIN과 MANAGER는 같은 쿠키 사용
+        } else if (path.startsWith("/api/super")) {
+            return UserRole.SUPER;
+        }
+        return null;
     }
 
     /**
@@ -143,14 +195,22 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
      */
     private Mono<Void> onError(ServerWebExchange exchange, String message, HttpStatus httpStatus) {
         exchange.getResponse().setStatusCode(httpStatus);
-        exchange.getResponse().getHeaders().add("Content-Type", "application/json");
-        String errorResponse = String.format("{\"code\":%d,\"message\":\"%s\"}",
-                httpStatus.value(), message);
+        exchange.getResponse().getHeaders().add("Content-Type", "application/json; charset=UTF-8");
+
+        String errorResponse = String.format(
+                "{\"success\":false,\"code\":\"%s\",\"message\":\"%s\"}",
+                httpStatus.value(),
+                message
+        );
+
         return exchange.getResponse().writeWith(
                 Mono.just(exchange.getResponse().bufferFactory().wrap(errorResponse.getBytes()))
         );
     }
 
+    /**
+     * 필터 설정 클래스
+     */
     public static class Config {
         // Configuration properties (필요시 추가)
     }
